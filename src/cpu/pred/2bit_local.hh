@@ -87,6 +87,8 @@ class LocalBP : public ConditionalPredictor
     void squash(ThreadID tid, void * &bp_history) override
     { assert(bp_history == NULL); }
 
+    bool lookupHint(ThreadID tid, Addr pc) override;
+
   private:
     /**
      *  Returns the taken/not taken prediction given the value of the

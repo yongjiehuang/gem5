@@ -104,6 +104,8 @@ class TAGE: public ConditionalPredictor
 
     // Base class methods.
     bool lookup(ThreadID tid, Addr pc, void* &bp_history) override;
+    // Direction hint for instruction no matter if it's a branch instruction or not.
+    bool lookupHint(ThreadID tid, Addr pc) override;
     void updateHistories(ThreadID tid, Addr pc, bool uncond,
                          bool taken, Addr target, const StaticInstPtr &inst,
                          void * &bp_history) override;

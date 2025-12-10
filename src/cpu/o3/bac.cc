@@ -47,6 +47,7 @@
 #include "cpu/o3/limits.hh"
 #include "debug/Activity.hh"
 #include "debug/BAC.hh"
+#include "debug/PFC.hh"
 #include "debug/Branch.hh"
 #include "debug/Drain.hh"
 #include "debug/FTQ.hh"
@@ -80,6 +81,7 @@ BAC::BAC(CPU *_cpu, const BaseO3CPUParams &params)
       ftq(nullptr),
       wroteToTimeBuffer(false),
       decoupledFrontEnd(params.decoupledFrontEnd),
+      pfc(params.pfc),
       fetchToBacDelay(params.fetchToBacDelay),
       decodeToFetchDelay(params.decodeToFetchDelay),
       commitToFetchDelay(params.commitToFetchDelay),
@@ -459,7 +461,11 @@ BAC::checkSignalsAndUpdate(ThreadID tid)
     // cause BAC to change its status.  BAC remains the same as before.
     return false;
 }
-
+void 
+BAC::recordPFCBranch(const InstSeqNum &seqNum)
+{
+    bpu->recordPFCBranch(seqNum);
+}
 void
 BAC::squashBpuHistories(ThreadID tid)
 {
@@ -647,6 +653,13 @@ BAC::generateFetchTargets(ThreadID tid, bool &status_change)
             if (branch_found) {
                 break;
             }
+            // If post-fetch correction is enabled.
+	        // Every instruction's direction hint needs to be recorded.
+            if (pfc) {
+                bool direction_hint = bpu->predictHint(search_addr, tid);
+                curFT->setDireHint(search_addr, direction_hint);
+                DPRINTF(PFC, "Predict hint for PC %#x taken?:%i\n", search_addr, direction_hint);
+            }	
 
             // If its not a branch check if the maximum search width is
             // reached. If yes stop searching.

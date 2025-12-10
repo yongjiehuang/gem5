@@ -96,6 +96,11 @@ class FetchTarget
      *  Only valid when the ft ends with branch. */
     std::unique_ptr<PCStateBase> predPC;
 
+    /** Direction hint of all instructions within the fetch target.
+     *  Only valid when PFC is enabled. */
+    std::unordered_map<Addr, bool> direHint;
+
+
     /* Fetch targets sequence number */
     const FTSeqNum ftSeqNum;
 
@@ -125,6 +130,18 @@ class FetchTarget
     endAddress()
     {
         return (endPC) ? endPC->instAddr() : MaxAddr;
+    }
+
+    /* Set direction hint of an instruction */
+    void setDireHint(const Addr &cur_pc, bool pred_hint)
+    { 
+        direHint[cur_pc] = pred_hint;
+    }
+
+    /* Get direction hint of an instruction */
+    bool getDireHint(const Addr &cur_pc)
+    { 
+        return direHint[cur_pc];
     }
 
     /* Fetch Target size (number of bytes) */

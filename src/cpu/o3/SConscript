@@ -62,6 +62,7 @@ if env['CONF']['BUILD_ISA']:
     Source('thread_state.cc')
 
     DebugFlag('BAC')
+    DebugFlag('PFC')
     DebugFlag('CommitRate')
     DebugFlag('FTQ')
     DebugFlag('IEW')

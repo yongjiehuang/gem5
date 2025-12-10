@@ -137,6 +137,9 @@ class ConditionalPredictor : public SimObject
      */
     virtual void branchPlaceholder(ThreadID tid, Addr pc,
                                    bool uncond, void * &bp_history);
+    
+    /** Used by post-fetch correction - Only get the direction without updating predictor counter. */
+    virtual bool lookupHint(ThreadID tid, Addr pc);
   protected:
 
     /** Number of bits to shift instructions by for predictor addresses. */

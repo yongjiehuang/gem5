@@ -281,6 +281,9 @@ class Decode
     /** number of Active Threads*/
     ThreadID numThreads;
 
+    /** Enable the post-fetch correction */
+    const bool pfc;
+
     /** List of active thread ids */
     std::list<ThreadID> *activeThreads;
 

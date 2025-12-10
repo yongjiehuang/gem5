@@ -48,6 +48,7 @@
 #include "base/compiler.hh"
 #include "base/trace.hh"
 #include "debug/Branch.hh"
+#include "debug/PFC.hh"
 
 namespace gem5
 {
@@ -391,9 +392,18 @@ BPredUnit::commitBranch(ThreadID tid, PredictorHistory* &hist)
                          hist->rasHistory);
     }
 
+    //If this branch triggerred a post-fetch correction, check its correctness here.
+    //Only when pfc is enabled does it work. Otherwise pfc_record is always empty.
+    bool is_pfc = checkPFCRecord(hist->seqNum);
+
     // Correct BTB (at commit) -------------------------------------
     // Update the BTB for all committed taken branches.
-    if (hist->actuallyTaken && !updateBTBAtSquash) { updateBTB(tid, hist); }
+    if (hist->actuallyTaken && !updateBTBAtSquash) { 
+        updateBTB(tid, hist); 
+        if (is_pfc) {
+            stats.correctPFC++;
+        }
+    }
 }
 
 
@@ -613,12 +623,45 @@ BPredUnit::updateBTB(ThreadID tid, PredictorHistory *&hist)
     btb->incorrectTarget(hist->pc, hist->type);
 }
 
+bool
+BPredUnit::lookupHint(ThreadID tid, Addr pc)
+{
+    panic("Not implemented for this BP!\n");
+}
+
 void
 BPredUnit::branchPlaceholder(ThreadID tid, Addr pc,
                              bool uncond, void * &bp_history)
 {
     // Delegate to conditional predictor
     cPred->branchPlaceholder(tid, pc, uncond, bp_history);
+}
+
+void
+BPredUnit::recordPFCBranch(const InstSeqNum &seqNum)
+{
+    ++stats.postFetchCorrection;
+    pfc_record.insert(seqNum); 
+}
+
+bool
+BPredUnit::checkPFCRecord(const InstSeqNum &seqNum)
+{
+    bool PFCTriggered = false;
+    if(pfc_record.find(seqNum) != pfc_record.end()){
+        PFCTriggered =  true;
+    }
+    auto it = pfc_record.upper_bound(seqNum);
+    pfc_record.erase(pfc_record.begin(), it);
+    return PFCTriggered;
+}
+
+bool
+BPredUnit::predictHint(Addr pc, ThreadID tid)
+{
+
+    bool direction_hint = lookupHint(tid, pc);
+    return direction_hint;
 }
 
 void
@@ -688,6 +731,12 @@ BPredUnit::BPredUnitStats::BPredUnitStats(BPredUnit *bp)
                "Number of BTB lookups"),
       ADD_STAT(BTBUpdates, statistics::units::Count::get(),
                "Number of BTB updates"),
+      ADD_STAT(postFetchCorrection, statistics::units::Count::get(),
+               "Number of resteerings caused by a BTB-miss cond-branch with a taken hint"),
+      ADD_STAT(correctPFC, statistics::units::Count::get(),
+               "Number of correct post-fetch corrections"),
+      ADD_STAT(PFCAccuracy, statistics::units::Ratio::get(), "correct PFC Ratio",
+               correctPFC / postFetchCorrection),
       ADD_STAT(BTBHits, statistics::units::Count::get(),
                "Number of BTB hits"),
       ADD_STAT(BTBHitRatio, statistics::units::Ratio::get(), "BTB Hit Ratio",
@@ -705,6 +754,7 @@ BPredUnit::BPredUnitStats::BPredUnitStats(BPredUnit *bp)
 
 {
     using namespace statistics;
+    PFCAccuracy.precision(5);
     BTBHitRatio.precision(6);
 
     lookups

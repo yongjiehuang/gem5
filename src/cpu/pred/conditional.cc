@@ -61,5 +61,11 @@ ConditionalPredictor::branchPlaceholder(ThreadID tid, Addr pc,
     panic("BPredUnit::branchPlaceholder() not implemented for this BP.\n");
 }
 
+bool
+ConditionalPredictor::lookupHint(ThreadID tid, Addr pc)
+{
+    panic("Please implement lookupHint for this BP!\n");
+}
+
 } // namespace branch_prediction
 } // namespace gem5

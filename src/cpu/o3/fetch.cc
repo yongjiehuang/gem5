@@ -84,6 +84,7 @@ Fetch::Fetch(CPU *_cpu, const BaseO3CPUParams &params)
       bac(nullptr),
       ftq(nullptr),
       decoupledFrontEnd(params.decoupledFrontEnd),
+      pfc(params.pfc),
       decodeToFetchDelay(params.decodeToFetchDelay),
       renameToFetchDelay(params.renameToFetchDelay),
       iewToFetchDelay(params.iewToFetchDelay),
@@ -1300,6 +1301,12 @@ Fetch::fetch(bool &status_change)
 
             DynInstPtr instruction = buildInst(
                     tid, staticInst, curMacroop, this_pc, *next_pc, true);
+
+            //Read direction hint from fetch target for corresponding instruction if post-fetch correction is enabled.
+	        if(pfc){
+                bool direction_hint = curFT->getDireHint(this_pc.instAddr()); 
+                instruction->setHintTaken(direction_hint);
+            }
 
             ppFetch->notify(instruction);
             numInst++;

@@ -230,6 +230,7 @@ class BaseO3CPU(BaseCPU):
 
     ## Parameters for decoupled front-end
     decoupledFrontEnd = Param.Bool(False, "Enables the decoupled front-end")
+    pfc = Param.Bool(False, "Enables the post-fetch correction")
     numFTQEntries = Param.Unsigned(
         8,
         "Number of entries in the Fetch target queue. (only used for "

@@ -48,6 +48,7 @@
 #include "cpu/o3/limits.hh"
 #include "debug/Activity.hh"
 #include "debug/Decode.hh"
+#include "debug/PFC.hh"
 #include "params/BaseO3CPU.hh"
 #include "sim/full_system.hh"
 
@@ -89,6 +90,7 @@ Decode::Decode(CPU *_cpu, const BaseO3CPUParams &params)
       fetchToDecodeDelay(params.fetchToDecodeDelay),
       decodeWidth(params.decodeWidth),
       numThreads(params.numThreads),
+      pfc(params.pfc),
       stats(_cpu)
 {
     if (decodeWidth > MaxWidth)
@@ -328,7 +330,7 @@ Decode::squash(const DynInstPtr &inst, bool control_miss, ThreadID tid)
     // Using PCState::branching()  will send execution on the
     // fallthrough and this will not be caught at execution (since
     // branch was correctly predicted taken)
-    toFetch->decodeInfo[tid].branchTaken = inst->readPredTaken() ||
+    toFetch->decodeInfo[tid].branchTaken = inst->pfc || inst->readPredTaken() ||
                                            inst->isUncondCtrl();
 
     toFetch->decodeInfo[tid].squashInst = inst;
@@ -742,6 +744,27 @@ Decode::decodeInsts(ThreadID tid)
                 break;
             }
         }
+        //With post-fetch correction enabled, a BTB-miss conditional branch needs to be examined.
+	    //And BTB-miss unconditional branch is already covered by code above.
+	    if(pfc && inst->isDirectCtrl() &&
+	       inst->isCondCtrl() && !inst->readPredTaken())
+	    {
+            std::unique_ptr<PCStateBase> target = inst->branchTarget();
+	        bool direction_hint = inst->readHintTaken(); 
+	        if(direction_hint){
+	            inst->pfc = true;
+	            cpu->recordPFCBranch(inst->seqNum);
+	            //BTB-miss conditional branch with a taken hint.
+	            squash(inst, true, inst->threadNumber);
+                DPRINTF(PFC,
+                       "[tid:%i] [sn:%llu] "
+                       "PFC triggered by a conditional branch: Wrong predicted target:  %s \
+                        PredPC: %s\n",
+		        tid, inst->seqNum, inst->readPredTarg(), *target);
+	            inst->setPredTarg(*target);
+	            break;
+	        }
+	    }
     }
 
     // If we didn't process all instructions, then we will need to block

@@ -1328,6 +1328,12 @@ CPU::dumpInsts()
         ++num;
     }
 }
+
+void
+CPU::recordPFCBranch(const InstSeqNum &seqNum)
+{
+    bac.recordPFCBranch(seqNum);
+}
 /*
 void
 CPU::wakeDependents(const DynInstPtr &inst)

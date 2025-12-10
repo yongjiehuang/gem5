@@ -456,6 +456,9 @@ class Fetch
     /** Enables the decoupled front-end */
     const bool decoupledFrontEnd;
 
+    /** Enables the post-fetch correction */
+    const bool pfc;
+
     /** Decode to fetch delay. */
     const Cycles decodeToFetchDelay;
 
