@@ -1,3 +1,40 @@
+# Implementation of Post-fetch Correction in gem5
+
+This branch contains a gem5 implementation of **Post-fetch Correction (PFC)**. This mechanism is described on the paper **"Re-establishing Fetch-Directed Instruction Prefetching: An Industry Perspective"** (ISPASS'21) [1].
+
+## Base Implementation & Acknowledgments
+**This work is built upon the [gem5-fdp](https://github.com/dhschall/gem5-fdp) repository.**
+
+The `gem5-fdp` repository provides the foundational **Fetch Directed Prefetching (FDP)** architecture, including:
+* **Decoupled Frontend**: Separation of the fetch unit from the branch predictor.
+* **Fetch Target Queue (FTQ)**: The structure required to buffer predicted fetch targets.
+
+My contribution in this branch focuses on implementing the **PFC** mechanism on top of this FDP infrastructure to handle BTB misses more efficiently.
+
+## Motivation of PFC
+A branch goes undetected on a BTB miss and no prediction is made. This would lead to wrong fetching for taken branches until the branch misprediction is detected. However, modern branch predictors, e.g., TAGE-SC-L, can correctly predict the direction of BTB-miss branches [1]. Based on this observation, PFC records prediction outcome(hint) for every instruction when generating the fetch target. If a BTB-miss conditional branch is identified at decode, redirect the front-end if its hint is taken. The performance improvement comes from the earlier wrong-path redirection at decode instead of at the time when branch outcome is solved. In orther word, this mechanism chooses to believe the highly accuracy of modern branch predictor. 
+
+## How to use
+We included an example [script](./configs/example/gem5_library/fdp-hello-pfc.py)
+how to configure FDP with PFC enabled correctly and simulate a simple "Hello World!" program.
+
+```bash
+# Build gem5
+scons build/ALL/gem5.opt
+# Run the simulation
+./build/ALL/gem5.opt \
+    configs/example/gem5_library/fdp-hello-pfc.py \
+        --isa X86 --pfc
+
+```
+
+## References
+[1] Ishii, Yasuo, et al. "Re-establishing fetch-directed instruction prefetching: An industry perspective." 2021 IEEE International Symposium on Performance Analysis of Systems and Software (ISPASS). IEEE, 2021.
+
+
+---
+---
+
 # The gem5 Simulator
 
 This is the repository for the gem5 simulator. It contains the full source code
